@@ -15,9 +15,11 @@
 homepage: "https://metricaz.com/"
 documentation: "https://metricaz.com/contato/"
 versions:
+# Lastest versions
+  - sha: 05943333025e4c56263018960746c84b6f526df8
+    changeNotes: atualizacao do codigo e novo formato do pixel livelo 
 # Older versions
   - sha: 09eb0079eec8450d4be2e2da8120e1caab2c58b1
     changeNotes: overwrites event and user parameters 
-# Older versions
   - sha: 49dcfdde73d68d6ab1b547604b1850fcf0654b72
     changeNotes: Initial Version
