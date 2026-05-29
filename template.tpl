@@ -1,5 +1,4 @@
-___TERMS_OF_SERVICE___
-
+﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -31,9 +30,21 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
+    "type": "TEXT",
+    "name": "campo_partner",
+    "displayName": "Partner",
+    "simpleValueType": true,
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ],
+    "help": "Livelo partner name"
+  },
+  {
     "type": "SELECT",
-    "name": "Filtro - Nome do evento",
-    "displayName": "event",
+    "name": "eventName",
+    "displayName": "Event",
     "macrosInSelect": false,
     "selectItems": [
       {
@@ -60,142 +71,97 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true
   },
   {
-    "type": "TEXT",
-    "name": "Campo texto - Page URL",
-    "displayName": "page_url",
-    "simpleValueType": true,
-    "valueValidators": [
-      {
-        "type": "NON_EMPTY"
-      },
-      {
-        "type": "STRING_LENGTH",
-        "args": [
-          10
-        ]
-      }
-    ],
-    "help": "Deve retornar a URL da página",
-    "notSetText": "Campo obrigatório. Informe a URL da página (ex: {{Page URL}})."
-  },
-  {
     "type": "GROUP",
-    "name": "escopo evento",
+    "name": "eventParams",
     "displayName": "Event Parameters",
     "groupStyle": "ZIPPY_OPEN_ON_PARAM",
     "subParams": [
       {
+        "type": "CHECKBOX",
+        "name": "haveEcommerceGa4",
+        "checkboxText": "E-commerce GA4",
+        "simpleValueType": true,
+        "alwaysInSummary": true,
+        "displayName": "If your implementation follows the Google Analytics 4 E-commerce standard, select the checkbox below:"
+      },
+      {
         "type": "TEXT",
         "name": "campo_items",
         "simpleValueType": true,
-        "help": "Lista de itens da transação em formato serializado (ex: JSON string).",
-        "displayName": "items"
+        "help": "Transaction item list in serialized format (e.g., JSON string).",
+        "displayName": "items",
+        "enablingConditions": [
+          {
+            "paramName": "haveEcommerceGa4",
+            "paramValue": false,
+            "type": "EQUALS"
+          }
+        ]
       },
       {
         "type": "TEXT",
         "name": "campo_transaction_id",
         "displayName": "transaction_id",
         "simpleValueType": true,
-        "help": "Id da venda"
+        "help": "Sale ID",
+        "enablingConditions": [
+          {
+            "paramName": "haveEcommerceGa4",
+            "paramValue": false,
+            "type": "EQUALS"
+          }
+        ]
       },
       {
         "type": "TEXT",
         "name": "campo_value",
         "displayName": "value",
         "simpleValueType": true,
-        "help": "Valor total da venda"
-      },
+        "help": "Total sale amount",
+        "enablingConditions": [
+          {
+            "paramName": "haveEcommerceGa4",
+            "paramValue": false,
+            "type": "EQUALS"
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
       {
-        "type": "TEXT",
-        "name": "campo_timestamp",
-        "displayName": "timestamp",
-        "simpleValueType": true,
-        "help": "Timestamp em milissegundos/segundos"
+        "paramName": "eventName",
+        "paramValue": "page_view",
+        "type": "NOT_EQUALS"
       }
     ]
   },
   {
     "type": "GROUP",
-    "name": "esccopo usuario",
+    "name": "userParameters",
     "displayName": "User Parameters",
     "groupStyle": "ZIPPY_OPEN_ON_PARAM",
     "subParams": [
       {
         "type": "TEXT",
         "name": "campo_user_id",
-        "displayName": "user_id",
         "simpleValueType": true,
-        "help": "ID do usuário do ambiente do parceiro."
-      },
-      {
-        "type": "TEXT",
-        "name": "campo_livelo_id",
-        "displayName": "livelo_id",
-        "simpleValueType": true,
-        "valueValidators": [
-          {
-            "type": "NON_EMPTY"
-          }
-        ],
-        "help": "Valor do mesmo parâmetro enviado na URL no início da navegação que deve ser armazenado (ex:cookie) e enviado em cada evento"
-      },
-      {
-        "type": "TEXT",
-        "name": "campo_ga_client_id",
-        "displayName": "ga_client_id",
-        "simpleValueType": true,
-        "valueValidators": [
-          {
-            "type": "NON_EMPTY"
-          }
-        ],
-        "help": "ID gerado pelo GA4 para estabelecer o cliente."
-      },
-      {
-        "type": "TEXT",
-        "name": "campo_ga_session_number",
-        "displayName": "ga_session_number",
-        "simpleValueType": true,
-        "help": "ID gerado pelo GA4 para estabelecer a sessão."
-      },
-      {
-        "type": "TEXT",
-        "name": "campo_ga_session_id",
-        "displayName": "ga_session_id",
-        "simpleValueType": true,
-        "help": "ID gerado pelo GA4 para estabelecer a sessão."
+        "help": "The user ID",
+        "displayName": "user_id"
       }
     ]
   },
   {
     "type": "GROUP",
-    "name": "Atribuição",
-    "displayName": "Atributtion",
+    "name": "idAnalytics",
+    "displayName": "Google Analytics",
     "groupStyle": "ZIPPY_OPEN_ON_PARAM",
     "subParams": [
       {
         "type": "TEXT",
-        "name": "campo_source",
-        "displayName": "source",
+        "name": "measurementId",
+        "displayName": "Measurement ID",
         "simpleValueType": true,
-        "valueValidators": [
-          {
-            "type": "NON_EMPTY"
-          }
-        ],
-        "defaultValue": "livelo"
-      },
-      {
-        "type": "TEXT",
-        "name": "campo_campo_source",
-        "displayName": "partner",
-        "simpleValueType": true,
-        "valueValidators": [
-          {
-            "type": "NON_EMPTY"
-          }
-        ],
-        "help": "Nome do parceiro Livelo"
+        "help": "The Google Analytics 4 property ID"
       }
     ]
   }
@@ -208,71 +174,146 @@ const getUrl = require('getUrl');
 const sendPixel = require('sendPixel');
 const encodeUriComponent = require('encodeUriComponent');
 const logToConsole = require('logToConsole');
+const localStorage = require('localStorage');
+const getTimestamp = require('getTimestamp');
+const createArgumentsQueue = require('createArgumentsQueue');
+const copyFromDataLayer = require('copyFromDataLayer');
+const JSON = require('JSON');
 
 const page_url = getUrl();
+const timestamp = getTimestamp() + ''; 
+const source = 'livelo';
+const gtag = createArgumentsQueue('gtag', 'dataLayer');
 
+// função tratadora: se não houver valor, retorna a string 'undefined'
 function s(v) {
-  if (v === undefined || v === null) return '';
+  if (v === undefined || v === null || v === '') return 'undefined';
   return v + '';
 }
 
-// evento dropdown template
-const eventName = s(data['Filtro - Nome do evento']);
+// evento vindo do dropdown do template
+const eventName = s(data['eventName']);
 
-// items já deve vir string JSON
-const items = s(data.campo_items);
+// captura automática do livelo_id via localStorage
+const livelo_id = s(localStorage.getItem('gtm_livelo_id'));
 
-const transaction_id = s(data.campo_transaction_id);
-const value = s(data.campo_value);
-const timestamp = s(data.campo_timestamp);
-
-const user_id = s(data.campo_user_id);
-const livelo_id = s(data.campo_livelo_id);
-
-const ga_client_id = s(data.campo_ga_client_id);
-const ga_session_number = s(data.campo_ga_session_number);
-const ga_session_id = s(data.campo_ga_session_id);
-
-// defaults (recomendado p/ reaproveitar em parceiros)
-const source = s(data.campo_source) || 'livelo';
-const partner = s(data.campo_campo_source) ;
-
-// não envia se não veio origem Livelo
-if (!livelo_id) {
+// validação de segurança inicial: não executa se não houver livelo_id
+if (!livelo_id || livelo_id === 'undefined') {
   data.gtmOnSuccess();
   return;
 }
 
-// params completos (ENVIA MESMO VAZIO)
-const params = {
-  event: eventName,
-  source: source,
-  partner: partner,
-  page_url: page_url,
-  livelo_id: livelo_id,
-  items: items,
-  user_id: user_id,
-  ga_client_id: ga_client_id,
-  ga_session_id: ga_session_id,
-  ga_session_number: ga_session_number,
-  transaction_id: transaction_id,
-  value: value,
-  timestamp: timestamp
-};
+// campo user_id
+const user_id = s(data.campo_user_id);
 
-// monta querystring (inclui vazios: key=)
-let query = '';
-for (const k in params) {
-  const v = params[k];
-  if (query) query += '&';
-  query += encodeUriComponent(k) + '=' + encodeUriComponent(v);
+// determinação dos dados de e-commerce e captura do estado do checkbox
+let items, transaction_id, value;
+const have_ecommerce_ga4 = data.haveEcommerceGa4 === true ? 'true' : 'false';
+
+if (data.haveEcommerceGa4 === true) {
+  // possui padrão de e-commerce ga4 (lê o datalayer)
+  const dlItems = copyFromDataLayer('ecommerce.items');
+  items = dlItems ? JSON.stringify(dlItems) : 'undefined';
+  transaction_id = s(copyFromDataLayer('ecommerce.transaction_id'));
+  value = s(copyFromDataLayer('ecommerce.value'));
+} else {
+  // não possui padrão de e-commerce ga4
+  const rawItems = data.campo_items;
+  if (typeof rawItems === 'object' && rawItems !== null) {
+    items = JSON.stringify(rawItems);
+  } else {
+    items = s(rawItems);
+  }
+  transaction_id = s(data.campo_transaction_id);
+  value = s(data.campo_value);
 }
 
-const url = 'https://partners.livelo.com.br/collect?' + query;
+const partner = s(data.campo_partner);
 
-logToConsole('Pixel Livelo URL:', url);
+// lista de campos do ga4 para buscar automaticamente via api
+let fields = ['client_id', 'session_id', 'session_number'];
+const gaData = {};
+const measurementId = s(data.measurementId); // campo preenchido no template
 
-sendPixel(url, data.gtmOnSuccess, data.gtmOnFailure);
+// função auxiliar para montar e enviar o pixel por natureza de evento
+const fireLiveloPixel = () => {
+  // dados estruturais obrigatórios em absolutamente qualquer evento
+  const params = {
+    event: eventName,
+    source: source,
+    partner: partner,
+    page_url: page_url,
+    livelo_id: livelo_id,
+    timestamp: timestamp,
+    user_id: user_id,
+    ga_client_id: s(gaData['client_id']),
+    ga_session_id: s(gaData['session_id']),
+    ga_session_number: s(gaData['session_number'])
+  };
+
+  // comportamento condicional por natureza de evento baseado nas suas regras de negócio
+  if (eventName === 'purchase') {
+    params.have_ecommerce_ga4 = have_ecommerce_ga4; // injetado apenas em eventos de e-commerce
+    params.transaction_id = transaction_id;
+    params.value = value;
+    params.items = items;
+  } 
+  else if (eventName === 'add_to_cart' || eventName === 'begin_checkout') {
+    params.have_ecommerce_ga4 = have_ecommerce_ga4;
+    params.items = items;
+    params.value = value;
+  }
+  else if (eventName === 'view_item') {
+    params.have_ecommerce_ga4 = have_ecommerce_ga4;
+    params.items = items;
+  }
+
+  // montagem inteligente da querystring com remoção seletiva de opcionais vazios
+  let query = '';
+  for (const k in params) {
+    const v = params[k];
+    
+    // lista de chaves obrigatórias que ignoram a trava (sempre serão enviadas)
+    const ehObrigatorio = (k === 'event' || k === 'source' || k === 'partner' || k === 'page_url' || k === 'livelo_id' || k === 'timestamp' || k === 'have_ecommerce_ga4');
+    
+    // se NÃO for obrigatório e o valor for 'undefined', remove do payload final
+    if (!ehObrigatorio && v === 'undefined') {
+      continue;
+    }
+
+    if (query) query += '&';
+    query += encodeUriComponent(k) + '=' + encodeUriComponent(v);
+  }
+
+  const url = 'https://partners.livelo.com.br/collect?' + query;
+
+  logToConsole('Pixel Livelo URL:', url);
+
+  // executa o disparo final do pixel
+  sendPixel(url, data.gtmOnSuccess, data.gtmOnFailure);
+};
+
+// lógica de recursão para coletar as informações do ga4 de forma assíncrona
+const gtagGet = () => {
+  if (!measurementId || measurementId === 'undefined') {
+    fireLiveloPixel();
+    return;
+  }
+
+  gtag('get', measurementId, fields[0], val => {
+    gaData[fields[0]] = val;
+    fields.shift();
+    
+    if (fields.length) {
+      gtagGet();
+    } else {
+      fireLiveloPixel();
+    }
+  });
+};
+
+// inicialização do fluxo do template
+gtagGet();
 
 
 ___WEB_PERMISSIONS___
@@ -359,6 +400,180 @@ ___WEB_PERMISSIONS___
       "isEditedByUser": true
     },
     "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "access_local_storage",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "keys",
+          "value": {
+            "type": 2,
+            "listItem": [
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "gtm_livelo_id"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "access_globals",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "keys",
+          "value": {
+            "type": 2,
+            "listItem": [
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "gtag"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "dataLayer"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "read_data_layer",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "allowedKeys",
+          "value": {
+            "type": 1,
+            "string": "any"
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
   }
 ]
 
@@ -366,10 +581,11 @@ ___WEB_PERMISSIONS___
 ___TESTS___
 
 scenarios: []
+setup: ''
 
 
 ___NOTES___
 
-Created on 16/02/2026, 11:00:14
+Created on 29/05/2026, 18:13:13
 
 
