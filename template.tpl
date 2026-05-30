@@ -72,9 +72,9 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "GROUP",
-    "name": "eventParams",
-    "displayName": "Event Parameters",
-    "groupStyle": "ZIPPY_OPEN_ON_PARAM",
+    "name": "ecommerceConfig",
+    "displayName": "E-commerce Configuration",
+    "groupStyle": "ZIPPY_OPEN",
     "subParams": [
       {
         "type": "CHECKBOX",
@@ -83,7 +83,22 @@ ___TEMPLATE_PARAMETERS___
         "simpleValueType": true,
         "alwaysInSummary": true,
         "displayName": "If your implementation follows the Google Analytics 4 E-commerce standard, select the checkbox below:"
-      },
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "eventName",
+        "paramValue": "page_view",
+        "type": "NOT_EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "GROUP",
+    "name": "manualEcommerceParams",
+    "displayName": "Event Parameters",
+    "groupStyle": "ZIPPY_OPEN_ON_PARAM",
+    "subParams": [
       {
         "type": "TEXT",
         "name": "campo_items",
@@ -100,28 +115,28 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "type": "TEXT",
-        "name": "campo_transaction_id",
-        "displayName": "transaction_id",
-        "simpleValueType": true,
-        "help": "Sale ID",
-        "enablingConditions": [
-          {
-            "paramName": "haveEcommerceGa4",
-            "paramValue": false,
-            "type": "EQUALS"
-          }
-        ]
-      },
-      {
-        "type": "TEXT",
         "name": "campo_value",
         "displayName": "value",
         "simpleValueType": true,
         "help": "Total sale amount",
         "enablingConditions": [
           {
-            "paramName": "haveEcommerceGa4",
-            "paramValue": false,
+            "paramName": "eventName",
+            "paramValue": "purchase",
+            "type": "EQUALS"
+          }
+        ]
+      },
+      {
+        "type": "TEXT",
+        "name": "campo_transaction_id",
+        "displayName": "transaction_id",
+        "simpleValueType": true,
+        "help": "Sale ID",
+        "enablingConditions": [
+          {
+            "paramName": "eventName",
+            "paramValue": "purchase",
             "type": "EQUALS"
           }
         ]
@@ -129,9 +144,9 @@ ___TEMPLATE_PARAMETERS___
     ],
     "enablingConditions": [
       {
-        "paramName": "eventName",
-        "paramValue": "page_view",
-        "type": "NOT_EQUALS"
+        "paramName": "haveEcommerceGa4",
+        "paramValue": false,
+        "type": "EQUALS"
       }
     ]
   },
@@ -179,11 +194,23 @@ const getTimestamp = require('getTimestamp');
 const createArgumentsQueue = require('createArgumentsQueue');
 const copyFromDataLayer = require('copyFromDataLayer');
 const JSON = require('JSON');
-
 const page_url = getUrl();
 const timestamp = getTimestamp() + ''; 
 const source = 'livelo';
 const gtag = createArgumentsQueue('gtag', 'dataLayer');
+
+// lógica que captura o origem_livelo da URL
+if (page_url && page_url.indexOf('livelo_origem=') > -1) {
+  const urlParts = page_url.split('livelo_origem=');
+  if (urlParts.length > 1) {
+    let extraido = urlParts[1].split('&')[0];
+    extraido = extraido.split('#')[0];
+    
+    if (extraido && extraido !== '') {
+      localStorage.setItem('gtm_livelo_id', extraido);
+    }
+  }
+}
 
 // função tratadora: se não houver valor, retorna a string 'undefined'
 function s(v) {
@@ -197,7 +224,7 @@ const eventName = s(data['eventName']);
 // captura automática do livelo_id via localStorage
 const livelo_id = s(localStorage.getItem('gtm_livelo_id'));
 
-// validação de segurança inicial: não executa se não houver livelo_id
+// validação de segurança inicial: não executa se não houver livelo_id ativo
 if (!livelo_id || livelo_id === 'undefined') {
   data.gtmOnSuccess();
   return;
@@ -211,13 +238,13 @@ let items, transaction_id, value;
 const have_ecommerce_ga4 = data.haveEcommerceGa4 === true ? 'true' : 'false';
 
 if (data.haveEcommerceGa4 === true) {
-  // possui padrão de e-commerce ga4 (lê o datalayer)
+  // e-commerce no padrão 
   const dlItems = copyFromDataLayer('ecommerce.items');
   items = dlItems ? JSON.stringify(dlItems) : 'undefined';
   transaction_id = s(copyFromDataLayer('ecommerce.transaction_id'));
   value = s(copyFromDataLayer('ecommerce.value'));
 } else {
-  // não possui padrão de e-commerce ga4
+  // e-commerce fora do padrão 
   const rawItems = data.campo_items;
   if (typeof rawItems === 'object' && rawItems !== null) {
     items = JSON.stringify(rawItems);
@@ -233,7 +260,7 @@ const partner = s(data.campo_partner);
 // lista de campos do ga4 para buscar automaticamente via api
 let fields = ['client_id', 'session_id', 'session_number'];
 const gaData = {};
-const measurementId = s(data.measurementId); // campo preenchido no template
+const measurementId = s(data.measurementId);
 
 // função auxiliar para montar e enviar o pixel por natureza de evento
 const fireLiveloPixel = () => {
@@ -252,20 +279,15 @@ const fireLiveloPixel = () => {
   };
 
   // comportamento condicional por natureza de evento baseado nas suas regras de negócio
-  if (eventName === 'purchase') {
-    params.have_ecommerce_ga4 = have_ecommerce_ga4; // injetado apenas em eventos de e-commerce
+if (eventName === 'purchase') {
+    params.have_ecommerce_ga4 = have_ecommerce_ga4; 
     params.transaction_id = transaction_id;
     params.value = value;
-    params.items = items;
+    params.items = items; 
   } 
-  else if (eventName === 'add_to_cart' || eventName === 'begin_checkout') {
+  else if (eventName === 'add_to_cart' || eventName === 'begin_checkout' || eventName === 'view_item') {
     params.have_ecommerce_ga4 = have_ecommerce_ga4;
-    params.items = items;
-    params.value = value;
-  }
-  else if (eventName === 'view_item') {
-    params.have_ecommerce_ga4 = have_ecommerce_ga4;
-    params.items = items;
+    params.items = items; 
   }
 
   // montagem inteligente da querystring com remoção seletiva de opcionais vazios
