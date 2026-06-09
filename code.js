@@ -29,6 +29,7 @@ const user_id = validValue(data.campo_user_id);
 const partner = validValue(data.campo_partner);
 const hasEcommGA4 = data.haveEcommerceGa4.toString().trim();
 
+logToConsole(search.teste);
 
 // Coleta de dados de e-commerce, com suporte para GA4 e formato personalizado
 let items, transaction_id, value;
@@ -44,6 +45,8 @@ if (hasEcommGA4 === 'true') {
   value = validValue(data.campo_value);
 }
 
+//logToConsole('ajustou items ecommerce');
+
 // Função de validação para evitar valores indesejados
 function validValue(v) {
   if (v === undefined || v === null || v === '') return 'undefined';
@@ -51,15 +54,18 @@ function validValue(v) {
 }
 
 // Gerenciamento do livelo_id (URL Priority > LocalStorage)
-if (page_url && page_url.indexOf('livelo_origem=') > -1) {
-  const extracted = page_url.split('livelo_origem=')[1].split('&')[0].split('#')[0];
-  if (extracted) localStorage.setItem('gtm_livelo_id', extracted);
+if (search && typeof(search.livelo_origem) !== 'undefined' && search.livelo_origem.length > 0) {
+  localStorage.setItem('gtm_livelo_id', validValue(search.livelo_origem));
 }
+
+logToConsole('setou url livelo origem eem storage');
 
 // Validação de livelo ID para garantir que temos um valor válido antes de prosseguir
 const livelo_id = validValue(localStorage.getItem('gtm_livelo_id'));
-if (!livelo_id || livelo_id === 'undefined') return;
-logToConsole('Livelo ID não encontrado. Pixel não será enviado.');
+if (!livelo_id || livelo_id === 'undefined'){
+  logToConsole('Livelo ID não encontrado. Pixel não será enviado.');
+   data.gtmOnFailure();
+}
 
 // Recursion to get each field in turn and finally push into dataLayer
 let gaData = {}, dataObj = {};
@@ -119,3 +125,23 @@ const fireLiveloPixel = () => {
   logToConsole('Pixel Livelo URL:', url);
   sendPixel(url, data.gtmOnSuccess, data.gtmOnFailure);
 }; fireLiveloPixel();
+
+
+// /// /// UNIT TESTS
+
+//SETUP
+const mockData = {
+  campo_partner: 'mtz-loja-teste',
+  eventName:'page_view',
+  haveEcommerceGa4: false
+};
+
+//TEST 1
+let url = 'https://www.example.com/path/?teste=gustavo&teste2=teste2';
+mock('getUrl', component => {
+      return url;
+    });
+const test = runCode(mockData);
+
+// Verify that the tag finished successfully.
+assertApi('gtmOnFailure').wasCalled();
