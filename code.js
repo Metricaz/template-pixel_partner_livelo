@@ -12,6 +12,7 @@ const getQueryParameters = require('getQueryParameters');
 const queryPermission = require('queryPermission');
 const getReferrerUrl = require('getReferrerUrl');
 const parseUrl = require('parseUrl');
+const makeString = require('makeString');
 
 // Configurações e Utilitários
 const referrer  = getReferrerUrl(undefined);
@@ -27,9 +28,13 @@ const measurementId = validValue(data.measurementId); //GA4 Measurement ID para 
 const eventName = validValue(data.eventName);
 const user_id = validValue(data.campo_user_id);
 const partner = validValue(data.campo_partner);
-const hasEcommGA4 = data.haveEcommerceGa4.toString().trim();
+const hasEcommGA4 = makeString(data.haveEcommerceGa4);
 
 //logToConsole(search.teste);
+
+if(data.removeStorage === 'true'){
+      localStorage.removeItem('gtm_livelo_data');
+}
 
 // Coleta de dados de e-commerce, com suporte para GA4 e formato personalizado
 let items, transaction_id, value;
@@ -50,7 +55,7 @@ if (hasEcommGA4 === 'true') {
 // Função de validação para evitar valores indesejados
 function validValue(v) {
   if (v === undefined || v === null || v === '') return 'undefined';
-  return v.toString().trim();
+  return makeString(v);
 }
 
 // Gerenciamento do livelo_id (URL Priority > LocalStorage) com controle de expiração
@@ -96,27 +101,26 @@ if (!livelo_id || livelo_id === 'undefined'){
   return; // Stop script execution if livelo_id is not valid
 }
 
-// Recursion to get each field in turn and finally push into dataLayer
-let gaData = {}, dataObj = {};
 const fields = ['client_id', 'session_id', 'session_number'];
-const gtagGet = () => {
-  if (!measurementId) return;
-  gtag('get', data.measurementId, fields[0], val => {
-    dataObj[fields[0]] = val;
+let gaData = {};
+let gtagGet = () => {
+  gtag('get', measurementId, fields[0], val => {
+    gaData[fields[0]] = val;
+    logToConsole('gtag get for', fields[0], ':', val);
     fields.shift();
     if (fields.length) {
       gtagGet();
-    } else {
-      gaData = dataObj;
-      data.gtmOnSuccess();
     }
   });
-}; gtagGet();
-
+};gtagGet();
 
 // 3. Construção do Pixel URL e Envio
 const fireLiveloPixel = () => {
 
+  if(measurementId && measurementId !== 'undefined'){
+    logToConsole('Dados coletados do GA4:', gaData);
+  }
+  
   // Construção do objeto de parâmetros para o pixel, incluindo os dados do GA4 e e-commerce quando aplicável
   const params = {
       event: eventName,
@@ -124,7 +128,7 @@ const fireLiveloPixel = () => {
       partner: partner,
       page_url: page_url,
       livelo_id: livelo_id,
-      timestamp: timestamp.toString().trim(),
+      timestamp: validValue(timestamp),
       user_id: user_id,
       ga_client_id: validValue(gaData.client_id),
       ga_session_id: validValue(gaData.session_id),
@@ -152,37 +156,5 @@ const fireLiveloPixel = () => {
   // 5. Envio do Pixel
   const url = 'https://partners.livelo.com.br/collect?' + queryParts.join('&');
   logToConsole('Pixel Livelo URL:', url);
-  sendPixel(url, data.gtmOnSuccess, data.gtmOnFailure);
+  sendPixel(url, data.gtmOnSuccess(), data.gtmOnFailure());
 }; fireLiveloPixel();
-
-
-
-// /// /// UNIT TESTS
-
-//SETUP
-const mockData = {
-  campo_partner: 'mtz-loja-teste',
-  eventName:'page_view',
-  haveEcommerceGa4: false
-};
-
-//TEST 1
-let url = 'https://www.example.com/path/?teste=gustavo&teste2=teste2';
-mock('getUrl', component => {
-      return url;
-    });
-const test = runCode(mockData);
-
-// Verify that the tag finished successfully.
-assertApi('gtmOnFailure').wasCalled();
-
-
-//TEST 2
-let url = 'https://www.example.com/path/?livelo_origem=1231231231231231.123123123.12';
-mock('getUrl', component => {
-      return url;
-    });
-const test = runCode(mockData);
-
-// Verify that the tag finished successfully.
-assertApi('gtmOnSuccess').wasCalled();
