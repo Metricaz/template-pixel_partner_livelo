@@ -33,7 +33,7 @@ const hasEcommGA4 = makeString(data.haveEcommerceGa4);
 //logToConsole(search.teste);
 
 if(data.removeStorage === 'true'){
-      localStorage.removeItem('gtm_livelo_data');
+  localStorage.removeItem('gtm_livelo_data');
 }
 
 // Coleta de dados de e-commerce, com suporte para GA4 e formato personalizado
@@ -58,21 +58,31 @@ function validValue(v) {
   return makeString(v);
 }
 
+
+let storedDataRaw = localStorage.getItem('gtm_livelo_data');
+let storedData = storedDataRaw ? JSON.parse(storedDataRaw) : null;
+
 // Gerenciamento do livelo_id (URL Priority > LocalStorage) com controle de expiração
 if (search && typeof(search.livelo_origem) !== 'undefined' && search.livelo_origem.length > 0) {
-  const liveloData = {
+  storedData = {
     id: validValue(search.livelo_origem),
-    expiry: timestamp + (30 * 60 * 1000)
+    expiry: timestamp + (30 * 60 * 1000),
+    lastEventName: eventName,
+    user_id: storedData && storedData.user_id ? storedData.user_id : user_id,
+    partner: storedData && storedData.partner ? storedData.partner : partner, // Preserve partner if it exists
+    measurementId: storedData && storedData.measurementId ? storedData.measurementId : measurementId, // Preserve measurementId if it exists
+    gaData: storedData && storedData.gaData ? storedData.gaData : undefined // Preserve GA data if it exists
   };
-  localStorage.setItem('gtm_livelo_data', JSON.stringify(liveloData));
-  logToConsole('Livelo ID set from URL and storage object created.');
+  localStorage.setItem('gtm_livelo_data', JSON.stringify(storedData));
+  //logToConsole('Livelo ID set from URL and storage object created.');
 } else {
-  logToConsole('No livelo_origem found in URL. Checking localStorage for existing Livelo ID.');
+  //logToConsole('No livelo_origem found in URL. Checking localStorage for existing Livelo ID.');
 }
 
 // Validação de livelo ID para garantir que temos um valor válido antes de prosseguir
-const storedDataRaw = localStorage.getItem('gtm_livelo_data');
-let storedData = storedDataRaw ? JSON.parse(storedDataRaw) : null;
+storedDataRaw = localStorage.getItem('gtm_livelo_data');
+storedData = storedDataRaw ? JSON.parse(storedDataRaw) : null;
+
 const currentTime = timestamp;
 
 if (storedData && storedData.id && storedData.expiry) {
@@ -80,59 +90,68 @@ if (storedData && storedData.id && storedData.expiry) {
     // Expired, remove from storage
     localStorage.removeItem('gtm_livelo_data');
     storedData = null; // Treat as not found
-    logToConsole('Livelo data expired. Removed from storage.');
+    //logToConsole('Livelo data expired. Removed from storage.');
   } else {
-    logToConsole('Livelo data found and is still valid.');
-    // If it's a page_view event, renew the expiration
-    if (eventName === 'page_view') {
+    //logToConsole('Livelo data found and is still valid.');
+    // If it's a configuration event, renew the expiration
+    if (eventName === 'configuration') {
       storedData.expiry = currentTime + (30 * 60 * 1000);
       localStorage.setItem('gtm_livelo_data', JSON.stringify(storedData));
-      logToConsole('Livelo expiry renewed for page_view event.');
+      //logToConsole('Livelo expiry renewed for configuration event.');
     }
   }
-} else {
-  logToConsole('Livelo data not found in localStorage.');
-}
+} 
 
 const livelo_id = validValue(storedData ? storedData.id : undefined); 
 if (!livelo_id || livelo_id === 'undefined'){
-  logToConsole('Livelo ID não encontrado ou expirado. Pixel não será enviado.');
+  //logToConsole('Livelo ID não encontrado ou expirado. Pixel não será enviado.');
    data.gtmOnFailure();
   return; // Stop script execution if livelo_id is not valid
 }
+
 
 const fields = ['client_id', 'session_id', 'session_number'];
 let gaData = {};
 let gtagGet = () => {
   gtag('get', measurementId, fields[0], val => {
     gaData[fields[0]] = val;
-    logToConsole('gtag get for', fields[0], ':', val);
+    //logToConsole('gtag get for', fields[0], ':', val);
     fields.shift();
     if (fields.length) {
       gtagGet();
+    }else{
+      storedData.gaData = gaData;
+      localStorage.setItem('gtm_livelo_data', JSON.stringify(storedData));
+      //logToConsole('All GA4 data collected:', gaData);
     }
   });
-};gtagGet();
+};
 
-// 3. Construção do Pixel URL e Envio
-const fireLiveloPixel = () => {
-
-  if(measurementId && measurementId !== 'undefined'){
-    logToConsole('Dados coletados do GA4:', gaData);
+if (eventName === 'configuration') {
+  
+  if(measurementId && measurementId !== 'undefined' && storedData.gaData === undefined){
+    gtagGet();
   }
   
+  //logToConsole('Evento é config, pixel não será enviado.');
+  data.gtmOnSuccess();
+  return; // Stop script execution for config events
+}else{
+ 
+  logToConsole('All GA4 data collected:', storedData);
+
   // Construção do objeto de parâmetros para o pixel, incluindo os dados do GA4 e e-commerce quando aplicável
   const params = {
       event: eventName,
-      source: partner,
-      partner: partner,
+      source: validValue(storedData && storedData.partner ? storedData.partner : partner),
+      partner: validValue(storedData && storedData.partner ? storedData.partner : partner),
       page_url: page_url,
       livelo_id: livelo_id,
       timestamp: validValue(timestamp),
-      user_id: user_id,
-      ga_client_id: validValue(gaData.client_id),
-      ga_session_id: validValue(gaData.session_id),
-      ga_session_number: validValue(gaData.session_number)
+      user_id: validValue(storedData && storedData.user_id ? storedData.user_id : user_id),
+      ga_client_id: validValue(storedData && storedData.gaData && storedData.gaData.client_id ? storedData.gaData.client_id : undefined ),
+      ga_session_id: validValue(storedData && storedData.gaData && storedData.gaData.session_id ? storedData.gaData.session_id : undefined ),
+      ga_session_number: validValue(storedData && storedData.gaData && storedData.gaData.session_number ? storedData.gaData.session_number : undefined )
     };
 
   // Adição condicional de e-commerce
@@ -157,4 +176,4 @@ const fireLiveloPixel = () => {
   const url = 'https://partners.livelo.com.br/collect?' + queryParts.join('&');
   logToConsole('Pixel Livelo URL:', url);
   sendPixel(url, data.gtmOnSuccess(), data.gtmOnFailure());
-}; fireLiveloPixel();
+}
