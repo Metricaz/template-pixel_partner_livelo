@@ -16,9 +16,11 @@ homepage: "https://metricaz.com/"
 documentation: "https://metricaz.com/contato/"
 versions:
 # Lastest versions
+  - sha: 8bdf3cc012df63705ee91191499bc9e77329d0b9
+    changeNotes: atualizacao das regras url para livelo origem
+# Older versions
   - sha: 544a404938ecd6bea6f013871c6e981b82d78dba
     changeNotes: atualizacao da logica localStorage e do layout
-# Older versions
   - sha: 05943333025e4c56263018960746c84b6f526df8
     changeNotes: atualizacao do codigo e novo formato do pixel livelo 
   - sha: 09eb0079eec8450d4be2e2da8120e1caab2c58b1

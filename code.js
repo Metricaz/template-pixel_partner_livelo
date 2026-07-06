@@ -1,4 +1,4 @@
-//required libraries
+// Required libraries
 const getUrl = require('getUrl');
 const sendPixel = require('sendPixel');
 const encodeUriComponent = require('encodeUriComponent');
@@ -14,29 +14,28 @@ const getReferrerUrl = require('getReferrerUrl');
 const parseUrl = require('parseUrl');
 const makeString = require('makeString');
 
-// Configurações e Utilitários
+// Configurations and Utilities
 const referrer  = getReferrerUrl(undefined);
 const page_url = getUrl();
 const timestamp = getTimestamp();
 const gtag = createArgumentsQueue('gtag', 'dataLayer');
-
-const urlObject = parseUrl(page_url); // Para manipulação de query params
+const urlObject = parseUrl(page_url); 
 const search = urlObject.searchParams;
 
-// Ler campos para coleta de dados pixel GA4, User e E-commerce
-const measurementId = validValue(data.measurementId); //GA4 Measurement ID para ler client_id
+// Read fields for GA4 pixel data collection, User, and E-commerce
+const measurementId = validValue(data.measurementId); 
 const eventName = validValue(data.eventName);
 const user_id = validValue(data.campo_user_id);
 const partner = validValue(data.campo_partner);
 const hasEcommGA4 = makeString(data.haveEcommerceGa4);
 
-//logToConsole(search.teste);
+// logToConsole(search.teste);
 
 if(data.removeStorage === 'true'){
   localStorage.removeItem('gtm_livelo_data');
 }
 
-// Coleta de dados de e-commerce, com suporte para GA4 e formato personalizado
+// E-commerce data collection, supporting both GA4 and custom formats
 let items, transaction_id, value;
 if (hasEcommGA4 === 'true') {
   const dlItems = copyFromDataLayer('ecommerce.items');
@@ -50,36 +49,62 @@ if (hasEcommGA4 === 'true') {
   value = validValue(data.campo_value);
 }
 
-//logToConsole('ajustou items ecommerce');
+// logToConsole('adjusted ecommerce items');
 
-// Função de validação para evitar valores indesejados
+// Validation function to prevent wrong values
 function validValue(v) {
   if (v === undefined || v === null || v === '') return 'undefined';
   return makeString(v);
 }
 
+// Function to validate the url livelo_origem
+function isInvalidLiveloId(id) {
+  if (id === undefined || id === null) return true;
+  const cleanId = makeString(id).trim().toLowerCase();
+  
+  // Explicit validation
+  if (cleanId === ''  || 
+      cleanId === 'null' || 
+      cleanId === 'undefined' || 
+      cleanId === '[object object]' || 
+      cleanId === 'false' || 
+      cleanId === 'nan' ||
+      cleanId === "''" ||   
+      cleanId === '""') {
+    return true;
+  }
+  return false;
+}
 
 let storedDataRaw = localStorage.getItem('gtm_livelo_data');
 let storedData = storedDataRaw ? JSON.parse(storedDataRaw) : null;
 
-// Gerenciamento do livelo_id (URL Priority > LocalStorage) com controle de expiração
-if (search && typeof(search.livelo_origem) !== 'undefined' && search.livelo_origem.length > 0) {
-  storedData = {
-    id: validValue(search.livelo_origem),
-    expiry: timestamp + (30 * 60 * 1000),
-    lastEventName: eventName,
-    user_id: storedData && storedData.user_id ? storedData.user_id : user_id,
-    partner: storedData && storedData.partner ? storedData.partner : partner, // Preserve partner if it exists
-    measurementId: storedData && storedData.measurementId ? storedData.measurementId : measurementId, // Preserve measurementId if it exists
-    gaData: storedData && storedData.gaData ? storedData.gaData : undefined // Preserve GA data if it exists
-  };
-  localStorage.setItem('gtm_livelo_data', JSON.stringify(storedData));
-  //logToConsole('Livelo ID set from URL and storage object created.');
+// Management of livelo_id (URL Priority > LocalStorage) with expiration control
+const urlLiveloOrigem = search && typeof search.livelo_origem !== 'undefined' ? search.livelo_origem : null;
+
+if (urlLiveloOrigem !== null) {
+  if (isInvalidLiveloId(urlLiveloOrigem)) {
+    localStorage.removeItem('gtm_livelo_data');
+    storedData = null;
+    // logToConsole('Invalid livelo_origem parameter detected in URL. Clearing history.');
+  } else {
+    storedData = {
+      id: validValue(urlLiveloOrigem),
+      expiry: timestamp + (30 * 60 * 1000), // 30 minutes
+      lastEventName: eventName,
+      user_id: storedData && storedData.user_id ? storedData.user_id : user_id,
+      partner: storedData && storedData.partner ? storedData.partner : partner, // Preserve partner if it exists
+      measurementId: storedData && storedData.measurementId ? storedData.measurementId : measurementId, // Preserve measurementId if it exists
+      gaData: storedData && storedData.gaData ? storedData.gaData : undefined // Preserve GA data if it exists
+    };
+    localStorage.setItem('gtm_livelo_data', JSON.stringify(storedData));
+    // logToConsole('Livelo ID set from URL and storage object created.');
+  }
 } else {
-  //logToConsole('No livelo_origem found in URL. Checking localStorage for existing Livelo ID.');
+  // logToConsole('No livelo_origem found in URL. Checking localStorage for existing Livelo ID.');
 }
 
-// Validação de livelo ID para garantir que temos um valor válido antes de prosseguir
+// Validation of livelo ID to ensure we have a valid value before proceeding
 storedDataRaw = localStorage.getItem('gtm_livelo_data');
 storedData = storedDataRaw ? JSON.parse(storedDataRaw) : null;
 
@@ -90,39 +115,38 @@ if (storedData && storedData.id && storedData.expiry) {
     // Expired, remove from storage
     localStorage.removeItem('gtm_livelo_data');
     storedData = null; // Treat as not found
-    //logToConsole('Livelo data expired. Removed from storage.');
+    // logToConsole('Livelo data expired. Removed from storage.');
   } else {
-    //logToConsole('Livelo data found and is still valid.');
+    // logToConsole('Livelo data found and is still valid.');
     // If it's a configuration event, renew the expiration
     if (eventName === 'configuration') {
       storedData.expiry = currentTime + (30 * 60 * 1000);
       localStorage.setItem('gtm_livelo_data', JSON.stringify(storedData));
-      //logToConsole('Livelo expiry renewed for configuration event.');
+      // logToConsole('Livelo expiry renewed for configuration event.');
     }
   }
 } 
 
 const livelo_id = validValue(storedData ? storedData.id : undefined); 
 if (!livelo_id || livelo_id === 'undefined'){
-  //logToConsole('Livelo ID não encontrado ou expirado. Pixel não será enviado.');
+  // logToConsole('Livelo ID not found or expired. Pixel will not be sent.');
    data.gtmOnFailure();
   return; // Stop script execution if livelo_id is not valid
 }
-
 
 const fields = ['client_id', 'session_id', 'session_number'];
 let gaData = {};
 let gtagGet = () => {
   gtag('get', measurementId, fields[0], val => {
     gaData[fields[0]] = val;
-    //logToConsole('gtag get for', fields[0], ':', val);
+    // logToConsole('gtag get for', fields[0], ':', val);
     fields.shift();
     if (fields.length) {
       gtagGet();
     }else{
       storedData.gaData = gaData;
       localStorage.setItem('gtm_livelo_data', JSON.stringify(storedData));
-      //logToConsole('All GA4 data collected:', gaData);
+      // logToConsole('All GA4 data collected:', gaData);
     }
   });
 };
@@ -133,14 +157,14 @@ if (eventName === 'configuration') {
     gtagGet();
   }
   
-  //logToConsole('Evento é config, pixel não será enviado.');
+  // logToConsole('Event is config, pixel will not be sent.');
   data.gtmOnSuccess();
   return; // Stop script execution for config events
 }else{
  
-  logToConsole('All GA4 data collected:', storedData);
+  // logToConsole('All GA4 data collected:', storedData);
 
-  // Construção do objeto de parâmetros para o pixel, incluindo os dados do GA4 e e-commerce quando aplicável
+  // Construction of the parameter object for the pixel, including GA4 and e-commerce data when applicable
   const params = {
       event: eventName,
       source: validValue(storedData && storedData.partner ? storedData.partner : partner),
@@ -154,7 +178,7 @@ if (eventName === 'configuration') {
       ga_session_number: validValue(storedData && storedData.gaData && storedData.gaData.session_number ? storedData.gaData.session_number : undefined )
     };
 
-  // Adição condicional de e-commerce
+  // Conditional addition of e-commerce data
   const isEcomEvent = ['purchase', 'add_to_cart', 'begin_checkout', 'view_item'].indexOf(eventName) > -1;
   if (isEcomEvent) {
     params.hasEcommGA4 = hasEcommGA4;
@@ -165,15 +189,15 @@ if (eventName === 'configuration') {
     params.value = value;
   }
 
-  // 4. Construção da Query String
+  // Query String Construction
   const queryParts = [], mandatory = ['event', 'source', 'partner', 'page_url', 'livelo_id', 'timestamp', 'hasEcommGA4'];
   for (const k in params) {
     if (mandatory.indexOf(k) === -1 && params[k] === 'undefined') continue;
     queryParts.push(encodeUriComponent(k) + '=' + encodeUriComponent(params[k]));
   }
 
-  // 5. Envio do Pixel
+  // Pixel Dispatch
   const url = 'https://partners.livelo.com.br/collect?' + queryParts.join('&');
-  logToConsole('Pixel Livelo URL:', url);
+  // logToConsole('Pixel Livelo URL:', url);
   sendPixel(url, data.gtmOnSuccess(), data.gtmOnFailure());
 }
