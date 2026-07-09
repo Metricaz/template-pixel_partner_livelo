@@ -257,6 +257,8 @@ if(data.removeStorage === 'true'){
   localStorage.removeItem('gtm_livelo_data');
 }
 
+//more commits just to try publish
+
 // E-commerce data collection, supporting both GA4 and custom formats
 let items, transaction_id, value;
 if (hasEcommGA4 === 'true') {
