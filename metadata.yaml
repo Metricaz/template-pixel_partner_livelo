@@ -16,7 +16,7 @@ homepage: "https://metricaz.com/"
 documentation: "https://metricaz.com/contato/"
 versions:
 # Lastest versions
-  - sha: c45c2e73389fe2a99a1ee5aaaa63f962825678cf
+  - sha: 6a5eea2fa02eb9e144577cce9a8c5673438815de
     changeNotes: atualizacao das regras url para livelo origem com tag config e atualizacao do layout
 # Older versions
   - sha: 544a404938ecd6bea6f013871c6e981b82d78dba
