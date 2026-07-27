@@ -16,9 +16,11 @@ homepage: "https://metricaz.com/"
 documentation: "https://metricaz.com/contato/"
 versions:
 # Lastest versions
+  - sha: b3b5edf77920d98e817c0ff2aad813368622e526
+    changeNotes: atualizacao do user_id armazenado no localStorage durante login/logout
+# Older versions
   - sha: 6a5eea2fa02eb9e144577cce9a8c5673438815de
     changeNotes: atualizacao das regras url para livelo origem com tag config e atualizacao do layout
-# Older versions
   - sha: 544a404938ecd6bea6f013871c6e981b82d78dba
     changeNotes: atualizacao da logica localStorage e do layout
   - sha: 05943333025e4c56263018960746c84b6f526df8
