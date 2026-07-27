@@ -257,8 +257,6 @@ if(data.removeStorage === 'true'){
   localStorage.removeItem('gtm_livelo_data');
 }
 
-//more commits just to try publish
-
 // E-commerce data collection, supporting both GA4 and custom formats
 let items, transaction_id, value;
 if (hasEcommGA4 === 'true') {
@@ -316,7 +314,7 @@ if (urlLiveloOrigem !== null) {
       id: validValue(urlLiveloOrigem),
       expiry: timestamp + (30 * 60 * 1000), // 30 minutes
       lastEventName: eventName,
-      user_id: storedData && storedData.user_id ? storedData.user_id : user_id,
+      user_id: user_id,
       partner: storedData && storedData.partner ? storedData.partner : partner, // Preserve partner if it exists
       measurementId: storedData && storedData.measurementId ? storedData.measurementId : measurementId, // Preserve measurementId if it exists
       gaData: storedData && storedData.gaData ? storedData.gaData : undefined // Preserve GA data if it exists
@@ -342,11 +340,32 @@ if (storedData && storedData.id && storedData.expiry) {
     // logToConsole('Livelo data expired. Removed from storage.');
   } else {
     // logToConsole('Livelo data found and is still valid.');
+    
+    let needsUpdate = false;
+
+    // Objective rule for state synchronization
+    if (user_id !== 'undefined') {
+      if (storedData.user_id !== user_id) {
+        storedData.user_id = user_id;
+        needsUpdate = true;
+      }
+    } 
+    else if (eventName === 'configuration') {
+      if (storedData.user_id !== 'undefined') {
+        storedData.user_id = 'undefined';
+        needsUpdate = true;
+      }
+    }
+
     // If it's a configuration event, renew the expiration
     if (eventName === 'configuration') {
       storedData.expiry = currentTime + (30 * 60 * 1000);
-      localStorage.setItem('gtm_livelo_data', JSON.stringify(storedData));
+      needsUpdate = true;
       // logToConsole('Livelo expiry renewed for configuration event.');
+    }
+
+    if (needsUpdate) {
+      localStorage.setItem('gtm_livelo_data', JSON.stringify(storedData));
     }
   }
 } 
@@ -765,3 +784,5 @@ setup: |-
 ___NOTES___
 
 Created on 29/05/2026, 18:13:13
+
+
